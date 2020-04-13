@@ -65,8 +65,9 @@ $(function() {
                                .then(function(object) {
                                     status.innerHTML = 'Agent connected';
                                     console.log("User login successful", object);
-                                    //console.log(RainbowUsername);
-                                    //console.log(RainbowPassword);
+                                    console.log(RainbowUsername);
+                                    console.log(RainbowPassword);
+                                    callButton.removeAttribute("disabled");
                                 })
                                 .catch(function(err) {
                                     console.log("User login failed", err);
@@ -101,6 +102,7 @@ $(function() {
             } else {
                 console.log("can");
                 // You are free to start or join a web conference
+    
             }
             /*
             rainbowSDK.bubbles

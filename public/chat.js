@@ -89,11 +89,13 @@ $(function() {
                                .then(function(object) {
                                 status.innerHTML = 'Agent connected';
                                     console.log("User login successful", object);
+                                    submitButton.removeAttribute("disabled");
                                 })
                                 .catch(function(err) {
                                     console.log("User login failed", err);
                                 });
                 console.log("Bubble id is", RainbowBubbleId);
+                
             }else if(this.status != 200){
                 console.log("Wrong when fetching data from api");
             }
