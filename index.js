@@ -18,6 +18,8 @@ let RainbowSDK = require("rainbow-node-sdk");
 app.use('/public', express.static('public'));
 app.use('/static', express.static('static'));
 
+var connections = {};
+
 // Define your configuration
 let options = {
 
@@ -142,6 +144,39 @@ rainbowSDK.start().then(() => {
         res.end();
     });
 
+    app.post('/longPoll', function(req, res){
+        // req: problem - iphone,login, guestuserid
+        var cat = req.body.problem;
+        var catArray = cat.split(',');
+        var category = catArray[0];
+        var skill = catArray[1];
+        var guestuserid = "$"+req.body.guestuserid;
+        // stashing the res 
+        connections[guestuserid] = res;
+        console.log("added into connection var")
+        // use the guestuserid to queue in the database - category - skill
+        //db.add_to_queue(guestuserid, category, skill);
+    });
+
+    app.post('/endCall', function(req, res){
+        var guestuserid = "$"+req.body.guestuserid;
+        // G set engage of the agent in the bubble from 1 to 0
+        //db.remove_engagement(guestuserid);
+        console.log("ENDED CALL");
+        res.end();
+    });
+	
+    // TEST POST METHOD TO END THE RES and SEND AGENT ID OVER TO WEBSITE
+     app.post('/agentFree', function(req, res){
+        // hardcode an agent to call
+	var agentid = "5e8e319f35c8367f99b9f475";
+	// becos no database so just take all res from connection
+	for(var key of Object.keys(connections)){
+	    connections.get[key].end(JSON.stringify(agentid));
+	}
+	     
+    });
+	
     app.post('/checkQueue', function(req, res){
         var cat = req.body.problem;
         var catArray = cat.split(',');
