@@ -172,7 +172,8 @@ rainbowSDK.start().then(() => {
 	var agentid = "5e8e319f35c8367f99b9f475";
 	// becos no database so just take all res from connection
 	for(var key of Object.keys(connections)){
-	    connections.get[key].end(JSON.stringify(agentid));
+        connections.get[key].end(JSON.stringify(agentid));
+        delete connections[key];
 	}
 	     
     });
