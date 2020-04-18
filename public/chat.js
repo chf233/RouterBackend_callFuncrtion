@@ -14,38 +14,44 @@ $(function() {
     var submitButton = document.getElementById('submit');
     var endChatButton = document.getElementById('endChat');
     var status = document.getElementById('status');
+    var ready = false;
 
     // Button event listener
     submitButton.addEventListener("click", function(){
-        var htmldata = "<div class=\"ms-Grid-row\"><p style=\"margin-left: 20px; margin-right: 20px; margin-top:10px; padding:8px; background-color: #efefef; text-align: left;\"><i class=\"ms-Icon ms-Icon--SkypeMessage\" aria-hidden=\"true\"></i>" + input.value + "</p></div>";
-        var container = document.getElementById('sentMessages');
-        container.insertAdjacentHTML('beforeend', htmldata);
-        var bubble = rainbowSDK.bubbles.getBubbleById(RainbowBubbleId);
-        /*
-        .then(function(object){
-            console.log("bubble retrieved,", object);
-            return object;
-        }).catch(function(err){
-            console.log("Bubble retrieve failed.");
-        });
-        */
-        rainbowSDK.im.sendMessageToBubble(bubble, input.value);
-        input.value="";
-        // Add info to your own table
-        /*
-        var htmldata = "<div class=\"ms-Grid-row\"><p style=\"margin-left: 20px; margin-right: 20px; margin-top:10px; padding:8px; background-color: #efefef; text-align: left;\"><i class=\"ms-Icon ms-Icon--SkypeMessage\" aria-hidden=\"true\"></i>" + input.value + "</p></div>";
-        var container = document.getElementById('sentMessages');
-        container.insertAdjacentHTML('beforeend', htmldata);
-        */
+        if(ready){
+            var htmldata = "<div class=\"ms-Grid-row\"><p style=\"margin-left: 20px; margin-right: 20px; margin-top:10px; padding:8px; background-color: #efefef; text-align: left;\"><i class=\"ms-Icon ms-Icon--SkypeMessage\" aria-hidden=\"true\"></i>" + input.value + "</p></div>";
+            var container = document.getElementById('sentMessages');
+            container.insertAdjacentHTML('beforeend', htmldata);
+            var bubble = rainbowSDK.bubbles.getBubbleById(RainbowBubbleId);
+            /*
+            .then(function(object){
+                console.log("bubble retrieved,", object);
+                return object;
+            }).catch(function(err){
+                console.log("Bubble retrieve failed.");
+            });
+            */
+            rainbowSDK.im.sendMessageToBubble(bubble, input.value);
+            input.value="";
+            // Add info to your own table
+            /*
+            var htmldata = "<div class=\"ms-Grid-row\"><p style=\"margin-left: 20px; margin-right: 20px; margin-top:10px; padding:8px; background-color: #efefef; text-align: left;\"><i class=\"ms-Icon ms-Icon--SkypeMessage\" aria-hidden=\"true\"></i>" + input.value + "</p></div>";
+            var container = document.getElementById('sentMessages');
+            container.insertAdjacentHTML('beforeend', htmldata);
+            */
+        }
+
     });
 
     endChatButton.addEventListener("click", function(){
-        var data={"bubbleid": RainbowBubbleId};
-        var xhttp = new XMLHttpRequest();
-        xhttp.open('POST', 'endChat', true);
-        xhttp.setRequestHeader('Content-Type','application/json');
-        xhttp.send(JSON.stringify(data));
-        window.location.replace('/');
+        if(ready){
+            var data={"bubbleid": RainbowBubbleId};
+            var xhttp = new XMLHttpRequest();
+            xhttp.open('POST', 'endChat', true);
+            xhttp.setRequestHeader('Content-Type','application/json');
+            xhttp.send(JSON.stringify(data));
+            window.location.replace('/');
+        }
     });
 
     // Execute a function when the user releases a key on the keyboard
@@ -95,9 +101,11 @@ $(function() {
                                     console.log("User login failed", err);
                                 });
                 console.log("Bubble id is", RainbowBubbleId);
+                ready = true;
                 
-            }else if(this.status != 200){
+            }else if(this.readyState == 4 && this.status != 200){
                 console.log("Wrong when fetching data from api");
+                status.innerText = "Wrong connecting to agent. Please retry";
             }
         };
     }
