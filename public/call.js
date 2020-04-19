@@ -11,6 +11,8 @@ $(function() {
     var submitProblemButton = document.getElementById('submitProblem');
     var status = document.getElementById('status');
     var callButton = document.getElementById('callButton');
+    var endCall = document.getElementById('endCall');
+    var call, userId;
 
     // Submit Problem button function here
     submitProblemButton.addEventListener("click", function(){
@@ -45,11 +47,20 @@ $(function() {
         callButton.addEventListener("click",function(){
             var problemStatement = document.getElementById("statement");
             var callWindow = document.getElementById("callWindow");
-
+            console.log("callbutton pressed");
             var sendData;
             // Todo 1: put the problem into sendData as a string. for example, "iphone,crash"
             // an example will be: sendData = {"problem" : "iphone,crash"}
-
+            var product = document.getElementById("product");
+            var productIndex = product.selectedIndex;
+            var productBrand = product.options[productIndex].value;
+            var problem = document.getElementById("problem");
+            var problemIndex = problem.selectedIndex;
+            var problemIssue = problem.options[problemIndex].value;
+            var sendText = productBrand + "," + problemIssue;
+            var sendData = {"problem" : sendText};
+            console.log(sendData);
+            console.log("data find start sending");
             // Display finding message
             problemStatement.innerHTML = "<h1> We are finding you an agent, please wait</h1>";
             // use checkQueue to check if we are able to be put into the queue. the framework has been implemented for you
@@ -62,18 +73,112 @@ $(function() {
                 if (this.readyState == 4 && this.status == 200) {
                     var result = JSON.parse(this.responseText);
                     queueStatus = result.time;
+                    console.log(queueStatus);
+                    console.log("check queue");
+                    // Check queue status. If "Long", we change the page and tell the customer to stop waiting
+                    // Else if it is "Ok", we start queueing
+                    // Else, we change the page to "An error has occurred"
+                    if(queueStatus == "Long"){
+                        problemStatement.innerHTML = "<h1> Sorry, No available agents right now. </h1>";
+                    }else if(queueStatus == "Ok"){
+                        console.log("that's right");
+                        problemStatement.style.display = "none";
+                        callWindow.style.display = "inherit";
+                        status = "found you an agent. You are in the queue now. We are logging you in. Please do not leave now.";
+                        // Do guest login here
+                        console.log("Fetching result");
+                        // get the value from local storage
+                        var data=localStorage.getItem('category');
+                        var dataTosend={"cat": data};
+                        var loginhttp = new XMLHttpRequest();
+                        loginhttp.open('POST', 'guestLogin', true);
+                        loginhttp.setRequestHeader('Content-Type','application/json');
+                        // send the data over to server
+                        loginhttp.send(JSON.stringify(dataTosend));
+                        // wait for server to return the guest user cred
+                        loginhttp.onreadystatechange = function() {
+                            if (this.readyState == 4 && this.status == 200) {
+                                var result = JSON.parse(this.responseText);
+                                RainbowUsername = result.Username;
+                                RainbowPassword = result.Password;
+                                RainbowBubbleId = result.BubbleId;
+                                console.log("Data: result fetched");
+                                console.log("bubble id is:", RainbowBubbleId);
+                            
+                                // Sign in to rainbow
+                                rainbowSDK.connection.signin(RainbowUsername, RainbowPassword)
+                                            .then(function(object) {
+                                                    status.innerHTML = 'Agent connected';
+                                                    console.log("User login successful", object);
+                                                    userId = object.account.userId;
+                                                    console.log(userId);
+                                                    console.log(RainbowUsername);
+                                                    console.log(RainbowPassword);
+                                                    //callButton.removeAttribute("disabled");
+                                                })
+                                                .catch(function(err) {
+                                                    console.log("User login failed", err);
+                                                });
+                                console.log("Bubble id is", RainbowBubbleId);
+                            }else if(this.status != 200){
+                                console.log("Wrong when fetching data from api");
+                            }
+                        };
+                        console.log("long pull start");
+                        // Using Long Poll Here to retrieve Agent ID
+                        var longPoll = new XMLHttpRequest();
+                        console.log("1");
+                        longPoll.open('POST', 'longPoll', true);
+                        console.log("2");
+                        longPoll.setRequestHeader('Content-Type','application/json');
+                        console.log("3");
+                        longPoll.send(JSON.stringify(sendData));
+                        console.log("sendData, check ready state");
+                        console.log(this.readyState == 4);
+                        console.log(this.status == 200);
+                        longPoll.onreadystatechange = function() {
+                            console.log("4");
+                            console.log(this.readyState);
+                            console.log(this.status);
+                            if (this.readyState == 4 && this.status == 200) {
+                                var result = JSON.parse(this.responseText);
+                                console.log(result);
+                                var agentID = result.agentID;
+                                console.log(agentID);
+                                // Todo 2: Process the longPoll data and get the agent contact id
+                                // Please store the ID in agentID
+                                rainbowSDK.contacts.searchById(agentID).then(function (contact) {
+                                    console.log(contact);
+                                    call = rainbowSDK.webRTC.callInAudio(contact);
+                                    if (call.label === "OK") {
+                                        console.log("Successfully found an agent");
+                                    }
+                                    else{
+                                        console.log("Error occured when fetching agent");
+                                    }
+                                });
+                            }else if(this.status != 200){
+                                console.log("Wrong when fetching data from api");
+                            }
+                        };
+                    }else{
+                        status = "An error has occurred.";
+                        problemStatement.innerHTML = "<h1> Sorry but an error has occurred. Please try again later.</h1>"
+                    }
                     console.log("Data fetched");
                 }else if(this.status != 200){
                     console.log("Wrong when fetching data from api");
                 }
             };
-
+            console.log("check queue");
             // Check queue status. If "Long", we change the page and tell the customer to stop waiting
             // Else if it is "Ok", we start queueing
             // Else, we change the page to "An error has occurred"
+            /*
             if(queueStatus == "Long"){
                 problemStatement.innerHTML = "<h1> Sorry, No available agents right now. </h1>";
             }else if(queueStatus == "Ok"){
+                console.log("that's right");
                 problemStatement.style.display = "none";
                 callWindow.style.display = "inherit";
                 status = "found you an agent. You are in the queue now. We are logging you in. Please do not leave now.";
@@ -94,17 +199,18 @@ $(function() {
                         RainbowUsername = result.Username;
                         RainbowPassword = result.Password;
                         RainbowBubbleId = result.BubbleId;
-                        console.log("Data fetched");
+                        console.log("Data: result fetched");
                         console.log("bubble id is:", RainbowBubbleId);
-                        
+                    
                         // Sign in to rainbow
                         rainbowSDK.connection.signin(RainbowUsername, RainbowPassword)
                                     .then(function(object) {
                                             status.innerHTML = 'Agent connected';
                                             console.log("User login successful", object);
+                                            userId = object.account.userId;
                                             console.log(RainbowUsername);
                                             console.log(RainbowPassword);
-                                            callButton.removeAttribute("disabled");
+                                            //callButton.removeAttribute("disabled");
                                         })
                                         .catch(function(err) {
                                             console.log("User login failed", err);
@@ -114,7 +220,7 @@ $(function() {
                         console.log("Wrong when fetching data from api");
                     }
                 };
-
+                console.log("long pull start");
                 // Using Long Poll Here to retrieve Agent ID
                 var longPoll = new XMLHttpRequest();
                 longPoll.open('POST', 'longPoll', true);
@@ -123,14 +229,13 @@ $(function() {
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
                         var result = JSON.parse(this.responseText);
-                        var agentID;
+                        var agentID = result.agentID;
                         // Todo 2: Process the longPoll data and get the agent contact id
                         // Please store the ID in agentID
-
                         rainbowSDK.contacts.searchById(agentID).then(function (contact) {
                             console.log(contact);
-                            var res = rainbowSDK.webRTC.callInAudio(contact);
-                            if (res.label === "OK") {
+                            call = rainbowSDK.webRTC.callInAudio(contact);
+                            if (call.label === "OK") {
                                 console.log("Successfully found an agent");
                             }
                             else{
@@ -145,23 +250,20 @@ $(function() {
                 status = "An error has occurred.";
                 problemStatement.innerHTML = "<h1> Sorry but an error has occurred. Please try again later.</h1>"
             }
-
+*/
             console.log("finish");
-            /*
-            rainbowSDK.bubbles
-    .startOrJoinWebRtcConference(bubble)
-    .then(function(bubbleWithWebConf) {
-        //Everything went fine, WebRTC conference is launched
-        bubble = bubbleWithWebConf;
-        console.log("created web");
-    })
-    .catch(function(error) {
-        //Something went wrong, handle the error
-        console.log("nooooo")
-    });*/
 
+            endCall.addEventListener("click", function(){
+                rainbowSDK.webRTC.release(call);
+                console.log("endcall button pressed");
+                var endData = {guestuserid : userId};
+                console.log(endData);
+                xhttp.send(JSON.stringify(endData));
+                console.log("end data sent");
+                });
+            
         });
-
+    
     
 
     /* Callback for handling the event 'RAINBOW_ONCONNECTIONSTATECHANGED' */
