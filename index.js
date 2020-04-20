@@ -145,23 +145,31 @@ rainbowSDK.start().then(() => {
     });
 
     app.post('/longPoll', function(req, res){
-        // req: problem - iphone,login, guestuserid
+        // req: {"problem" : "iphone,login", "guestuserid":"..."}
         var cat = req.body.problem;
         var catArray = cat.split(',');
         var category = catArray[0];
         var skill = catArray[1];
         var guestuserid = "$"+req.body.guestuserid;
-        // stashing the res 
-        connections[guestuserid] = res;
-        console.log("added into connection var")
-        // use the guestuserid to queue in the database - category - skill
-        //db.add_to_queue(guestuserid, category, skill);
+        if(guestuserid in connections){
+            // alr sent req before
+            var agentid = connections[guestuserid];
+            var dataToSend = {'agentid':agentid};
+        }else{
+            connections[guestuserid] = null;
+            console.log("first request: guestuserid added into connections");
+            // use the guestuserid to queue in the database - category - skill
+            //db.add_to_queue(guestuserid, category, skill);
+            var dataToSend = {'agentid':null};
+        }
+        res.end(JSON.stringify(dataToSend));
     });
 
     app.post('/endCall', function(req, res){
         var guestuserid = "$"+req.body.guestuserid;
         // G set engage of the agent in the bubble from 1 to 0
         //db.remove_engagement(guestuserid);
+	delete connections[guestuserid];
         console.log("ENDED CALL");
         res.end();
     });
@@ -172,8 +180,9 @@ rainbowSDK.start().then(() => {
 	var agentid = "5e8e319f35c8367f99b9f475";
 	// becos no database so just take all res from connection
 	for(var key of Object.keys(connections)){
-        connections[key].end(JSON.stringify(agentid));
-        delete connections[key];
+             // set the value of that guestuserid key to be the agentid
+              connections[key]=agentid;
+              //delete connections[key];
 	}
 	     
     });
