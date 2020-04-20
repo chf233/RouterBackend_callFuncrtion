@@ -115,35 +115,56 @@ $(function() {
                                                     console.log(RainbowUsername);
                                                     console.log(RainbowPassword);
                                                     //callButton.removeAttribute("disabled");
+                                                    call();                      
                                                 })
                                                 .catch(function(err) {
                                                     console.log("User login failed", err);
                                                 });
                                 console.log("Bubble id is", RainbowBubbleId);
+
                             }else if(this.status != 200){
                                 console.log("Wrong when fetching data from api");
                             }
                         };
                         console.log("long pull start");
                         // Using Long Poll Here to retrieve Agent ID
-                        var longPoll = new XMLHttpRequest();
+                        function call(){
+                        var longPoll = null;
+                        longPoll = new XMLHttpRequest();
                         console.log("1");
                         longPoll.open('POST', 'longPoll', true);
                         console.log("2");
                         longPoll.setRequestHeader('Content-Type','application/json');
                         console.log("3");
-                        longPoll.send(JSON.stringify(sendData));
+                        sendData2 = {"problem":sendText,"guestuserid":userId};
+                        console.log(sendData2);
+                        console.log(sendData2.problem);
+                        console.log(sendData2.guestuserid)
+                        longPoll.send(JSON.stringify(sendData2));
                         console.log("sendData, check ready state");
                         console.log(this.readyState == 4);
                         console.log(this.status == 200);
+                        longPoll.open('POST', 'longPoll', true);
+                        longPoll.send(JSON.stringify(sendData2));
+                        console.log(sendData2.problem.split(","));
                         longPoll.onreadystatechange = function() {
                             console.log("4");
                             console.log(this.readyState);
                             console.log(this.status);
+                            var result = JSON.parse(this.responseText);
+                            console.log(result);
+                            if(result == null){
+                                console.log("ohh");
+                                call();
+                            }
+                            else{
+                                console.log("yes");
+                            }
                             if (this.readyState == 4 && this.status == 200) {
                                 var result = JSON.parse(this.responseText);
                                 console.log(result);
-                                var agentID = result.agentID;
+                                //setTimeout(function(){ask()},3000)
+                                var agentID = result.agentid;
                                 console.log(agentID);
                                 // Todo 2: Process the longPoll data and get the agent contact id
                                 // Please store the ID in agentID
@@ -160,7 +181,7 @@ $(function() {
                             }else if(this.status != 200){
                                 console.log("Wrong when fetching data from api");
                             }
-                        };
+                        };}
                     }else{
                         status = "An error has occurred.";
                         problemStatement.innerHTML = "<h1> Sorry but an error has occurred. Please try again later.</h1>"
@@ -256,8 +277,11 @@ $(function() {
             endCall.addEventListener("click", function(){
                 rainbowSDK.webRTC.release(call);
                 console.log("endcall button pressed");
-                var endData = {guestuserid : userId};
+                var endData = {"guestuserid" : userId};
                 console.log(endData);
+                var xhttp = new XMLHttpRequest();
+                xhttp.open('POST', 'endCall', true);
+                xhttp.setRequestHeader('Content-Type','application/json');
                 xhttp.send(JSON.stringify(endData));
                 console.log("end data sent");
                 });
